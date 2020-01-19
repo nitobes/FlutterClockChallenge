@@ -1,3 +1,7 @@
+// Copyright 2019 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 import 'dart:async';
 
 import 'package:clock_app/number_animation.dart';
@@ -21,8 +25,10 @@ class OrigamiClock extends StatefulWidget {
 }
 
 class _OrigamiClockState extends State<OrigamiClock> {
+  final _tabletRatio = 5 / 3;
   DateTime _dateTime = DateTime.now();
   Timer _timer;
+  Duration _renderInterval = Duration(seconds: 1); // interval to render clock
 
   @override
   void initState() {
@@ -61,7 +67,7 @@ class _OrigamiClockState extends State<OrigamiClock> {
       _timer = Timer(
         // Update once per second, but make sure to do it at the beginning of each
         // new second, so that the clock is accurate.
-        Duration(seconds: 1) - Duration(milliseconds: _dateTime.millisecond),
+        _renderInterval - Duration(milliseconds: _dateTime.millisecond),
         _updateTime,
       );
     });
@@ -79,17 +85,20 @@ class _OrigamiClockState extends State<OrigamiClock> {
     return DateFormat('ss').format(time);
   }
 
-  Row _renderClockUI(double clockWidth, double clockHeight) {
-    var colonImage = Image.asset("assets/colon.png", height: 40, width: 40);
+  Row _renderClockRow(double clockWidth, double clockHeight) {
     const smallSpacing = 40.0; // width spacing for colon and seconds
+    var colonImage = Image.asset("assets/colon.png",
+        height: smallSpacing, width: smallSpacing);
 
-    // Format each digit of HH:mm:ss time from last render and current.
-    var previousTime = _dateTime.subtract(Duration(seconds: 1));
+    // Format each digit of HH:mm:ss time from previous render
+    var previousTime = _dateTime.subtract(_renderInterval);
     final previousHour = _formatHour(previousTime);
-    final currentHour = _formatHour(_dateTime);
     final previousMinute = _formatMinute(previousTime);
-    final currentMinute = _formatMinute(_dateTime);
     final previousSecond = _formatSecond(previousTime);
+
+    // Format each digit of HH:mm:ss time for current render
+    final currentHour = _formatHour(_dateTime);
+    final currentMinute = _formatMinute(_dateTime);
     final currentSecond = _formatSecond(_dateTime);
 
     return Row(
@@ -106,7 +115,7 @@ class _OrigamiClockState extends State<OrigamiClock> {
               flex: 1,
               child: NumberAnimation(
                   fromDigit: previousHour[1], toDigit: currentHour[1])),
-          // colon
+          // Colons
           Container(
             height: clockHeight / 2,
             width: smallSpacing,
@@ -145,7 +154,8 @@ class _OrigamiClockState extends State<OrigamiClock> {
     var screenWidth = MediaQuery.of(context).size.width;
     var screenHeight = MediaQuery.of(context).size.height;
 
-    var clockWidth = screenWidth * 0.8;
+    // Ensure clock width spacing is accurate to tablet ratio
+    var clockWidth = screenHeight * _tabletRatio * 0.8;
     var clockHeight = screenHeight * 0.7;
 
     return Stack(children: <Widget>[
@@ -160,7 +170,7 @@ class _OrigamiClockState extends State<OrigamiClock> {
               child: Container(
                   width: clockWidth,
                   height: clockHeight,
-                  child: _renderClockUI(clockWidth, clockHeight))))
+                  child: _renderClockRow(clockWidth, clockHeight))))
     ]);
   }
 }
